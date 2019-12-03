@@ -25,7 +25,7 @@ public class FamilyBehaviorPredictor {
         this.nMonkeys = m;
         this.nFamily = f;
         this.thresholdIn = Math.min(2.0 * m / f, m * 1.0 / 4.0);
-        this.thresholdOut = Math.min(3.0 * m / f, m * 1.0 / 1.5);
+        this.thresholdOut = Math.min(4.0 * m / f, m * 0.9);
     }
 
     public ArrayList<Integer> getFollowingNumbers(ArrayList<Family> members, ArrayList<Animal> animals, ArrayList<Animal> previousAnimals) {

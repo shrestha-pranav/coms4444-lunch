@@ -35,6 +35,7 @@ public class Player implements lunch.sim.Player {
     private BehaviorType previousBehaviourType = BehaviorType.AGGRESSIVE;
     private boolean beAggressiveTillTheEnd = false;
     private int nTimestepsWithNoDistractor = 0;
+    private int nTimestepsSomeoneIsDistractor = 0;
 
     private DistractionStrategy mDistraction;
 
@@ -53,7 +54,7 @@ public class Player implements lunch.sim.Player {
         this.nFamily = f;
         this.overallTime = (int)Math.round(t);
         this.nMonkeys = m;
-        this.random = new Random(this.seed);
+        this.random = new Random(this.seed + id);
 
         this.previousAnimals = animals;
         this.previousMembers = members;
@@ -155,7 +156,7 @@ public class Player implements lunch.sim.Player {
         System.out.println("[|] beAggressiveTillTheEnd:\t" + beAggressiveTillTheEnd);
         System.out.println("[|] weHaveEatenOurFood: \t" + weHaveEatenOurFood(ps));
         System.out.println("[|] nTimestepsWithNoDistractor:\t" + nTimestepsWithNoDistractor);
-        System.out.println("[^] =======================================");
+        System.out.println("[|] nTimestepsSomeoneIsDistr.:\t" + nTimestepsSomeoneIsDistractor);
         // Zero it down if we are distracting
         if(weAreDistracting()) {
             nTimestepsWithNoDistractor = 0;
@@ -163,6 +164,12 @@ public class Player implements lunch.sim.Player {
         // Remember the number of steps with no distractor
         if (!weAreDistracting() && noDistractor(members, animals, ps)) {
             nTimestepsWithNoDistractor += 1;
+        }
+        // Remember the number of steps of other distractor
+        if (!noDistractor(members, animals, ps)) {
+            nTimestepsSomeoneIsDistractor += 1;
+        } else {
+            nTimestepsSomeoneIsDistractor = 0;
         }
         // Check if we have decided to be aggressive till the end
         if (beAggressiveTillTheEnd) {
@@ -199,6 +206,12 @@ public class Player implements lunch.sim.Player {
                 }
             }
         }
+        // If we are distraction and there is a distractor
+        int somebodyDistractingThreshold = 10 + random.nextInt(20);
+        System.out.println("[|] somebodyDistractingThresh.:\t" + somebodyDistractingThreshold);
+        if (weAreDistracting() && nTimestepsSomeoneIsDistractor >= somebodyDistractingThreshold){
+            return BehaviorType.AGGRESSIVE;
+        }
         // Is there is no other distractor => go be one
         if(weAreDistracting() || nTimestepsWithNoDistractor >= 10) {
             if(weHaveEatenOurFood(ps)) {
@@ -234,20 +247,25 @@ public class Player implements lunch.sim.Player {
     public Command getCommand(ArrayList<Family> members, ArrayList<Animal> animals, PlayerState ps) {
         Command command;
         // Get the bahivour typ to execute
-        BehaviorType type = getNextBehaviorType(members, animals, ps);
-        System.out.println("[|] Playing type:\t" + type);
+//        BehaviorType type = getNextBehaviorType(members, animals, ps);
+        BehaviorType type = BehaviorType.DISTRACTION_EAT;
+        if(turn < 100) {
+            type = BehaviorType.AGGRESSIVE;
+        }
+        System.out.println("[|] Playing type:\t\t" + type);
         System.out.println("[^] =======================================");
         // Depending on the type generate the appropriate command
         switch (type) {
             case DISTRACTION:
             case DISTRACTION_EAT:
-                if(previousBehaviourType != BehaviorType.DISTRACTION_EAT && previousBehaviourType != BehaviorType.DISTRACTION_NOEAT) {
+                if(previousBehaviourType != BehaviorType.DISTRACTION_EAT) {
+                    System.out.println("[^] RESEETING");
                     mDistraction.resetDistractionStrategy(ps);
                 }
                 command = mDistraction.getCommand(members, animals, previousAnimals, ps, true);
                 break;
             case DISTRACTION_NOEAT:
-                if(previousBehaviourType != BehaviorType.DISTRACTION_EAT && previousBehaviourType != BehaviorType.DISTRACTION_NOEAT) {
+                if(previousBehaviourType != BehaviorType.DISTRACTION_NOEAT) {
                     mDistraction.resetDistractionStrategy(ps);
                 }
                 command = mDistraction.getCommand(members, animals, previousAnimals, ps, false);
